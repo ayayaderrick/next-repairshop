@@ -6,7 +6,7 @@ export const metadata = {
 export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
-      <h2 className="text-2xl">Page Not Found</h2>
+      <h2 className="text-2xl mb-2">Page Not Found</h2>
       <Image
         src={"/images/not-found-1024x1024.png"}
         alt="Page Not Found"
