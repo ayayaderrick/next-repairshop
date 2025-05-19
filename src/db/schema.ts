@@ -11,7 +11,7 @@ import {
 
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
-  firtName: varchar("first_name").notNull(),
+  firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   email: varchar("email").unique().notNull(),
   phone: varchar("phone").unique().notNull(),

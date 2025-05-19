@@ -1,6 +1,7 @@
 import { BackButton } from "@/components/BackButton";
 import { getCustomer } from "@/lib/queries/getCustomer";
 import * as Sentry from "@sentry/nextjs";
+import CustomerForm from "@/app/(rs)/customers/form/CustomerForm";
 
 const customerFormPage = async ({
   searchParams,
@@ -32,8 +33,10 @@ const customerFormPage = async ({
       console.log(customer);
 
       //Put customer form component
+      return <CustomerForm customer={customer} />;
     } else {
       //New customer form component
+      return <CustomerForm />;
     }
   } catch (error) {
     if (error instanceof Error) {
