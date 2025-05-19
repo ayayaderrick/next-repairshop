@@ -2,8 +2,9 @@ import { withAuth } from "@kinde-oss/kinde-auth-nextjs/middleware";
 import { NextRequest } from "next/server";
 
 export default withAuth(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function middleware(request: NextRequest) {
-    console.log(request);
+    // console.log(request);
   },
   {
     isReturnToCurrentPage: true,
