@@ -37,7 +37,7 @@ const InputWithLabel = <S,>({
           <FormControl>
             <Input
               id={nameInSchema}
-              className={`w-full max-w-xs disabled:text-zinc-700 disabled:opacity-75 ${className}`}
+              className={`w-full max-w-xs disabled:text-zinc-800 disabled:dark:text-zinc-400 disabled:opacity-75 ${className}`}
               {...props}
               {...field}
             />

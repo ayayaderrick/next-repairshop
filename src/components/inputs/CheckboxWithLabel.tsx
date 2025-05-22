@@ -14,12 +14,14 @@ type Props<S> = {
   fieldTitle: string;
   nameInSchema: keyof S & string;
   message: string;
+  disabled?: boolean;
 };
 
 const CheckboxWithLabel = <S,>({
   fieldTitle,
   nameInSchema,
   message,
+  disabled = false,
 }: Props<S>) => {
   const form = useFormContext();
 
@@ -29,7 +31,7 @@ const CheckboxWithLabel = <S,>({
       name={nameInSchema}
       render={({ field }) => (
         <FormItem className="w-full flex items-center gap-2">
-          <FormLabel className="text-base w-1/3 mt-2" htmlFor={nameInSchema}>
+          <FormLabel className="text-base w-1/3" htmlFor={nameInSchema}>
             {fieldTitle}
           </FormLabel>
           <div className="flex items-center gap-2">
@@ -39,6 +41,7 @@ const CheckboxWithLabel = <S,>({
                 {...field}
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={disabled}
               />
             </FormControl>
             <p>{message}</p>

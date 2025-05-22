@@ -3,6 +3,23 @@ import { getCustomer } from "@/lib/queries/getCustomer";
 import { getTicket } from "@/lib/queries/getTicket";
 import * as Sentry from "@sentry/nextjs";
 import TicketForm from "@/app/(rs)/tickets/form/TicketForm";
+import { Users, init as kindeInit } from "@kinde/management-api-js";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+
+export const generateMetadata = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}) => {
+  const { customerId, ticketId } = await searchParams;
+
+  if (!customerId && !ticketId)
+    return { title: "Missing Ticket ID or Customer ID" };
+
+  if (customerId) return { title: `New Ticket for Customer #${customerId}` };
+
+  if (ticketId) return { title: `Edit Ticket #${ticketId}` };
+};
 
 const ticketFormPage = async ({
   searchParams,
@@ -25,6 +42,13 @@ const ticketFormPage = async ({
         </div>
       );
     }
+
+    const { getPermission, getUser } = getKindeServerSession();
+    const [managerPermission, user] = await Promise.all([
+      getPermission("manager"),
+      getUser(),
+    ]);
+    const isManager = managerPermission?.isGranted;
 
     //New ticket
     if (customerId) {
@@ -61,8 +85,18 @@ const ticketFormPage = async ({
       }
 
       //return ticket form
-      console.log(customer);
-      return <TicketForm customer={customer} />;
+      if (isManager) {
+        kindeInit(); //Initializes the kinde management API
+        const { users } = await Users.getUsers();
+
+        const techs = users
+          ? users.map((user) => ({ id: user.email!, description: user.email! }))
+          : [];
+
+        return <TicketForm customer={customer} techs={techs} />;
+      } else {
+        return <TicketForm customer={customer} />;
+      }
     }
 
     //Edit ticket form
@@ -85,9 +119,26 @@ const ticketFormPage = async ({
       const customer = await getCustomer(ticket.customerId);
 
       //return ticket form
-      console.log("Ticket: ", ticket);
-      console.log("Customer: ", customer);
-      return <TicketForm customer={customer} ticket={ticket} />;
+      if (isManager) {
+        kindeInit(); //Initializes the kinde management API
+        const { users } = await Users.getUsers();
+
+        const techs = users
+          ? users.map((user) => ({ id: user.email!, description: user.email! }))
+          : [];
+
+        return <TicketForm customer={customer} ticket={ticket} techs={techs} />;
+      } else {
+        const isEditable =
+          user!.email?.toLowerCase() === ticket.tech.toLowerCase();
+        return (
+          <TicketForm
+            customer={customer}
+            ticket={ticket}
+            isEditable={isEditable}
+          />
+        );
+      }
     }
   } catch (error) {
     if (error instanceof Error) {

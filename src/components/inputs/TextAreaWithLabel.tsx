@@ -38,7 +38,7 @@ const TextAreaWithLabel = <S,>({
           <FormControl>
             <Textarea
               id={nameInSchema}
-              className={className}
+              className={`disabled:text-zinc-800 disabled:dark:text-zinc-400 disabled:opacity-75 ${className}`}
               placeholder="Type notes here..."
               {...props}
               {...field}
