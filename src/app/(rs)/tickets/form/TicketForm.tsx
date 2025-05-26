@@ -14,6 +14,12 @@ import {
 } from "@/zod-schemas/ticket";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { saveTicketAction } from "@/app/actions/saveTicketAction";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+import { LoaderCircle } from "lucide-react";
+import { DisplayServerActionResponse } from "@/components/DisplayServerActionResponse";
+import { useEffect, useState } from "react";
 
 type Props = {
   customer: selectCustomerSchemaType;
@@ -24,6 +30,7 @@ type Props = {
 
 const TicketForm = ({ customer, ticket, techs, isEditable = true }: Props) => {
   const isManager = Array.isArray(techs);
+  const [showResponse, setShowResponse] = useState(false);
 
   const defaultValues: insertTicketSchemaType = {
     id: ticket?.id ?? "(New)",
@@ -40,12 +47,40 @@ const TicketForm = ({ customer, ticket, techs, isEditable = true }: Props) => {
     defaultValues,
   });
 
+  const {
+    execute: executeSave,
+    result: saveResult,
+    isPending: isSaving,
+    reset: resetSaveAction,
+  } = useAction(saveTicketAction, {
+    onSuccess({ data }) {
+      toast.success("Success!", {
+        description: data?.message,
+      });
+    },
+    onError({ error }) {
+      toast.error("Error!", {
+        description: error?.serverError || "An error occurred while saving.",
+      });
+    },
+  });
+
   const submitForm = async (data: insertTicketSchemaType) => {
-    console.log(data);
+    // console.log(data);
+    executeSave(data);
   };
+
+  useEffect(() => {
+    if (saveResult) {
+      setShowResponse(true);
+      const timer = setTimeout(() => setShowResponse(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveResult]);
 
   return (
     <div className="w-full flex flex-col gap-1 sm:px-8">
+      {showResponse && <DisplayServerActionResponse result={saveResult} />}
       <div className="mt-2 mb-4">
         <h2 className="text-2xl font-bold">
           {ticket?.id && isEditable
@@ -130,8 +165,16 @@ const TicketForm = ({ customer, ticket, techs, isEditable = true }: Props) => {
                   className="cursor-pointer"
                   variant={"default"}
                   title="Save Details"
+                  disabled={isSaving}
                 >
-                  Save Details
+                  {isSaving ? (
+                    <>
+                      <LoaderCircle className="animate-spin" />
+                      Saving
+                    </>
+                  ) : (
+                    "Save Details"
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -139,7 +182,10 @@ const TicketForm = ({ customer, ticket, techs, isEditable = true }: Props) => {
                   className="cursor-pointer"
                   title="Reset Form"
                   onClick={() => {
-                    form.reset(defaultValues);
+                    {
+                      form.reset(defaultValues);
+                      resetSaveAction();
+                    }
                   }}
                 >
                   Reset Form

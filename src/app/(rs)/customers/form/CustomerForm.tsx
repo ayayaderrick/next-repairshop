@@ -15,6 +15,12 @@ import SelectWithLabel from "@/components/inputs/SelectWithLabel";
 import { StatesArray } from "@/constants/StatesArray";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import CheckboxWithLabel from "@/components/inputs/CheckboxWithLabel";
+import { saveCustomerAction } from "@/app/actions/saveCustomerAction";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+import { LoaderCircle } from "lucide-react";
+import { DisplayServerActionResponse } from "@/components/DisplayServerActionResponse";
+import { useEffect, useState } from "react";
 
 type Props = {
   customer?: selectCustomerSchemaType;
@@ -23,6 +29,7 @@ type Props = {
 const CustomerForm = ({ customer }: Props) => {
   const { getPermission, isLoading } = useKindeBrowserClient();
   const isManager = !isLoading && getPermission("manager")?.isGranted;
+  const [showResponse, setShowResponse] = useState(false);
 
   const defaultValues: insertCustomerSchemaType = {
     id: customer?.id ?? 0,
@@ -45,12 +52,42 @@ const CustomerForm = ({ customer }: Props) => {
     defaultValues,
   });
 
+  const {
+    execute: executeSave,
+    result: saveResult,
+    isPending: isSaving,
+    reset: resetSaveAction,
+  } = useAction(saveCustomerAction, {
+    onSuccess({ data }) {
+      if (data?.message) {
+        toast.success("Success!", {
+          description: data.message,
+        });
+      }
+    },
+    onError({ error }) {
+      toast.error("Error!", {
+        description: error?.serverError || "An error occurred while saving.",
+      });
+    },
+  });
+
   const submitForm = async (data: insertCustomerSchemaType) => {
-    console.log(data);
+    // console.log(data);
+    executeSave(data);
   };
+
+  useEffect(() => {
+    if (saveResult) {
+      setShowResponse(true);
+      const timer = setTimeout(() => setShowResponse(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveResult]);
 
   return (
     <div className="flex flex-col gap-1 sm:px-8">
+      {showResponse && <DisplayServerActionResponse result={saveResult} />}
       <div className="mt-2 mb-4">
         <h2 className="text-2xl font-bold">
           {customer?.id ? "Edit" : "New"} Customer{" "}
@@ -135,8 +172,16 @@ const CustomerForm = ({ customer }: Props) => {
                 className="cursor-pointer"
                 variant={"default"}
                 title="Save"
+                disabled={isSaving}
               >
-                Save Details
+                {isSaving ? (
+                  <>
+                    <LoaderCircle className="animate-spin" />
+                    Saving
+                  </>
+                ) : (
+                  "Save Details"
+                )}
               </Button>
               <Button
                 type="button"
@@ -144,7 +189,10 @@ const CustomerForm = ({ customer }: Props) => {
                 className="cursor-pointer"
                 title="Reset"
                 onClick={() => {
-                  form.reset(defaultValues);
+                  {
+                    form.reset(defaultValues);
+                    resetSaveAction();
+                  }
                 }}
               >
                 Reset Form
