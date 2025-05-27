@@ -8,7 +8,11 @@ const SearchButton = () => {
   const status = useFormStatus();
 
   return (
-    <Button type="submit" disabled={status.pending} className="w-20">
+    <Button
+      type="submit"
+      disabled={status.pending}
+      className="w-20 cursor-pointer"
+    >
       {status.pending ? <LoaderCircle className="animate-spin" /> : "Search"}
     </Button>
   );
