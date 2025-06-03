@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   CircleCheckIcon,
   CircleXIcon,
@@ -31,7 +31,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Filter from "@/components/react-table/Filter";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import usePolling from "@/hooks/usePolling";
 
 type Props = {
   data: TicketSearchResultsType;
@@ -41,10 +42,18 @@ type RowType = TicketSearchResultsType[0];
 
 const TicketTable = ({ data }: Props) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([
     { id: "ticketDate", desc: false },
   ]);
+
+  usePolling(searchParams.get("searchText"), 300000);
+
+  const page = searchParams.get("page");
+  const pageIndex = useMemo(() => {
+    return page ? parseInt(page) - 1 : 0;
+  }, [page]);
 
   const columnHeadersArray: Array<keyof RowType> = [
     "ticketDate",
@@ -56,6 +65,13 @@ const TicketTable = ({ data }: Props) => {
     "completed",
   ];
 
+  const columnWidths = {
+    completed: 150,
+    ticketDate: 150,
+    title: 250,
+    tech: 225,
+    email: 225,
+  };
   const columnHelper = createColumnHelper<RowType>();
 
   const columns = columnHeadersArray.map((columnName) =>
@@ -77,11 +93,13 @@ const TicketTable = ({ data }: Props) => {
       },
       {
         id: columnName,
+        size:
+          columnWidths[columnName as keyof typeof columnWidths] ?? undefined,
         header: ({ column }) => {
           return (
             <Button
               variant={"ghost"}
-              className="pl-1 w-full justify-between"
+              className="pl-1 w-full justify-between cursor-pointer"
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")
               }
@@ -126,6 +144,10 @@ const TicketTable = ({ data }: Props) => {
     state: {
       sorting,
       columnFilters,
+      pagination: {
+        pageIndex,
+        pageSize: 10,
+      },
     },
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
@@ -144,7 +166,11 @@ const TicketTable = ({ data }: Props) => {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="space-y-2 py-2">
+                  <TableHead
+                    key={header.id}
+                    className="space-y-2 py-2"
+                    style={{ width: header.getSize() }}
+                  >
                     <div>
                       {header.isPlaceholder
                         ? null
@@ -155,7 +181,12 @@ const TicketTable = ({ data }: Props) => {
                     </div>
                     {header.column.getCanFilter() ? (
                       <div className="grid place-content-center">
-                        <Filter column={header.column} />
+                        <Filter
+                          column={header.column}
+                          filteredRows={table
+                            .getFilteredRowModel()
+                            .rows.map((row) => row.getValue(header.column.id))}
+                        />
                       </div>
                     ) : null}
                   </TableHead>
@@ -182,7 +213,7 @@ const TicketTable = ({ data }: Props) => {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-4 py-4">
+      <div className="flex items-center justify-end space-x-4 py-4 flex-wrap">
         <div className="flex-1 text-sm text-muted-foreground">
           {/* {table.getFilteredSelectedRowModel().rows.length} of{" "} */}
           {table.getFilteredRowModel().rows.length} result(s) returned.
@@ -192,6 +223,13 @@ const TicketTable = ({ data }: Props) => {
           {table.getPageCount()}
         </div>
         <div className="space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => router.refresh()}
+            className="cursor-pointer"
+          >
+            Refresh Table
+          </Button>
           <Button
             variant="outline"
             onClick={() => table.resetSorting()}
@@ -208,7 +246,13 @@ const TicketTable = ({ data }: Props) => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => table.previousPage()}
+            onClick={() => {
+              const newIndex = table.getState().pagination.pageIndex - 1;
+              table.setPageIndex(newIndex);
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("page", (newIndex + 1).toString());
+              router.replace(`?${params.toString()}`, { scroll: false });
+            }}
             disabled={!table.getCanPreviousPage()}
             className="cursor-pointer"
           >
@@ -216,7 +260,13 @@ const TicketTable = ({ data }: Props) => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => table.nextPage()}
+            onClick={() => {
+              const newIndex = table.getState().pagination.pageIndex + 1;
+              table.setPageIndex(newIndex);
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("page", (newIndex + 1).toString());
+              router.replace(`?${params.toString()}`, { scroll: false });
+            }}
             disabled={!table.getCanNextPage()}
             className="cursor-pointer"
           >
