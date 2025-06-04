@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Filter from "@/components/react-table/Filter";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import usePolling from "@/hooks/usePolling";
 
 type Props = {
@@ -158,6 +158,20 @@ const TicketTable = ({ data }: Props) => {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  const stateParam = table.getState().columnFilters;
+  useEffect(() => {
+    const currentPageIndex = table.getState().pagination.pageIndex;
+    const pageCount = table.getPageCount();
+
+    if (pageCount <= currentPageIndex && currentPageIndex > 0) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("params", "1");
+      router.replace(`${params.toString()}`, { scroll: false });
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateParam]);
+
   return (
     <div className="mt-6">
       <div className="rounded-md border">
@@ -220,7 +234,7 @@ const TicketTable = ({ data }: Props) => {
         </div>
         <div className="text-sm text-muted-foreground">
           Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+          {Math.max(1, table.getPageCount())}
         </div>
         <div className="space-x-2">
           <Button
