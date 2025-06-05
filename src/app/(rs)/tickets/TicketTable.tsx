@@ -165,8 +165,8 @@ const TicketTable = ({ data }: Props) => {
 
     if (pageCount <= currentPageIndex && currentPageIndex > 0) {
       const params = new URLSearchParams(searchParams.toString());
-      params.set("params", "1");
-      router.replace(`${params.toString()}`, { scroll: false });
+      params.set("page", "1");
+      router.replace(`?${params.toString()}`, { scroll: false });
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
